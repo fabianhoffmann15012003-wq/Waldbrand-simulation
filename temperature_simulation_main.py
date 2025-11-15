@@ -47,8 +47,8 @@ def calc_S_2(s2_alt, T, dt):
     r_2t = (r_2*r_m)/(r_2+r_m)
     return s2_alt-s2_alt*r_2t*dt
 
-def calc_x_c(S_2, S_2_0):
-    return S_2/S_2_0
+def calc_x_c(S_2_matrix, S_2_0_matrix):
+    return S_2_matrix/S_2_0_matrix
 
 def calc_avg_u_v(): # WAS ZUR HÖLLE IST u_H?????
     print("\n--------------------- TO DO calc_avg_u_v() ---------------------\n")
@@ -87,9 +87,9 @@ def calc_D_eff():
 
 
 # calculations for reaction and convection
-def calc_S_1(s1_alt, T, dt):
-    r_1 = C_S1*np.exp(-B_1/T)
-    return s1_alt-s1_alt*r_1*dt
+def calc_S_1(S1_alt_matrix, T_matrix, dt):
+    r_1 = C_S1*np.exp(-B_1/T_matrix)
+    return S1_alt_matrix-S1_alt_matrix*r_1*dt
 
 
 def calc_S(S_1, S_2):
@@ -97,8 +97,22 @@ def calc_S(S_1, S_2):
 
 # calculation of the Temperature => calculating a step
 
-def calc_T(x, y, S_1, S_2, T_matrix):
+def calc_T(T_matrix, S_1, D_eff, avg_u_all):
     T_matrix_new = np.copy(T_matrix)
     for i in range(np.shape(T_matrix[0])):
         for j in range(np.shape(T_matrix[1])):
-            T_xy = T_matrix[x,y]
+            T_xy = T_matrix[i, j]
+
+
+def main():
+    N = 100 # number of steps
+    dt = 0.1 # length of time steps from paper in seconds
+    S_1_matrix = np.zeros((250,250)) # shape of the forest
+    S_1_0_matrix = S_1_matrix
+    T_matrix = np.zeros((250,250)) # shape of the forest 
+    for t in range(N):
+        S_1_matrix_new = calc_S_1(S_1_matrix, T_matrix, dt)
+        D_eff, D_eff = calc_D_eff()
+        
+        avg_u_all = calc_avg_u()
+        T_new = calc_T(T_matrix, S_1_matrix, D_eff, avg_u_all)
