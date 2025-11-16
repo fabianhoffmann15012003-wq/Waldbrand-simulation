@@ -31,6 +31,7 @@ LAMBDA = RHO_G/RHO_S
 C_2 = ALPHA*A_1/C_PS
 C_3 = ALPHA*A_2/C_PS
 C_4 = 1/(H*RHO_S*C_PS)
+KAPPA = 0.41 # Karman's Konstant
 
 # calculations 
 
@@ -40,35 +41,34 @@ def calc_c_0(S):
 def calc_c_1(S, c_0):
     return c_0-ALPHA*S
 
-def calc_S_2(s2_alt, T, dt):
-    _,_, avg_u = calc_avg_u()
-    r_2 = C_S2*np.exp(-B_2/T)
-    r_m = R_M_0+R_M_C*(avg_u-1)
+def calc_S_1(S1_alt_matrix, T_matrix, dt):
+    r_1 = C_S1*np.exp(-B_1/T_matrix)
+    return S1_alt_matrix-S1_alt_matrix*r_1*dt
+
+def calc_S_2(S2_alt_matrix, T_matrix, avg_u_x, dt):
+    r_2 = C_S2*np.exp(-B_2/T_matrix)
+    r_m = R_M_0+R_M_C*(avg_u_x-1)
     r_2t = (r_2*r_m)/(r_2+r_m)
-    return s2_alt-s2_alt*r_2t*dt
+    return S2_alt_matrix-S2_alt_matrix*r_2t*dt
+
+def calc_S(S_1, S_2):
+    return S_1+S_2
 
 def calc_x_c(S_2_matrix, S_2_0_matrix):
     return S_2_matrix/S_2_0_matrix
 
-def calc_avg_u_v(): # WAS ZUR HÖLLE IST u_H?????
-    print("\n--------------------- TO DO calc_avg_u_v() ---------------------\n")
-    return np.nan
 
-def calc_avg_u_b(): # WAS ZUR HÖLLE IST u_b*?????
-    print("\n--------------------- TO DO calc_avg_u_b() ---------------------\n")
-    return np.nan
 
-def calc_avg_u(avg_u_v, avg_u_b, x_c):
-    print("\n--------------------- TO DO calc_avg_u() ---------------------\n")
-    avg_u_x = np.nan
-    avg_u_y = np.nan
-    avg_u = avg_u_v+(avg_u_b-avg_u_v)*(a-x_c)
-    return avg_u_x, avg_u_y, avg_u
+def calc_avg_u_x(x_c):
+    avg_u_x = AVG_U_V_X+(AVG_U_B_X-AVG_U_V_X)*(1-x_c)
+    return avg_u_x
 
-def calc_L():
-    print("\n--------------------- TO DO calc_L() ---------------------\n")
-    L_x = np.nan
-    L_y = np.nan
+def calc_L(T_matrix):
+    T_max = np.max(T_matrix)
+    T_dropped = 0.1*T_max +T_A
+    T_max_x, T_max_y = np.unravel_index(np.argmax(T_matrix), T_matrix.shape)
+    L_x = (np.sum(T_matrix[T_max_x,:]>T_dropped)-1)*dx
+    L_y = (np.sum(T_matrix[:,T_max_y]>T_dropped)-1)*dx
     return L_x, L_y
 
 def calc_omega():
@@ -78,7 +78,7 @@ def calc_omega():
     return omega_x, omega_y
 
 def calc_D_eff():
-    avg_u_x, avg_u_y, _ = calc_avg_u()
+    avg_u_x, avg_u_y = calc_avg_u_x(), 0
     L_x, L_y = calc_L()
     omega_x, omega_y = calc_omega()
     D_eff_x = D_RB+A_D*avg_u_x*L_x*(1-np.exp(-GAMMA_D*omega_x))
@@ -86,33 +86,46 @@ def calc_D_eff():
     return D_eff_x, D_eff_y
 
 
-# calculations for reaction and convection
-def calc_S_1(S1_alt_matrix, T_matrix, dt):
-    r_1 = C_S1*np.exp(-B_1/T_matrix)
-    return S1_alt_matrix-S1_alt_matrix*r_1*dt
 
-
-def calc_S(S_1, S_2):
-    return S_1+S_2
 
 # calculation of the Temperature => calculating a step
 
-def calc_T(T_matrix, S_1, D_eff, avg_u_all):
+def calc_T(T_matrix, S_1, D_eff, avg_u_x, avg_u_y=0):
     T_matrix_new = np.copy(T_matrix)
+    #T_matrix_dx2 = 
     for i in range(np.shape(T_matrix[0])):
         for j in range(np.shape(T_matrix[1])):
-            T_xy = T_matrix[i, j]
+            
 
 
-def main():
-    N = 100 # number of steps
-    dt = 0.1 # length of time steps from paper in seconds
-    S_1_matrix = np.zeros((250,250)) # shape of the forest
-    S_1_0_matrix = S_1_matrix
-    T_matrix = np.zeros((250,250)) # shape of the forest 
-    for t in range(N):
-        S_1_matrix_new = calc_S_1(S_1_matrix, T_matrix, dt)
-        D_eff, D_eff = calc_D_eff()
-        
-        avg_u_all = calc_avg_u()
-        T_new = calc_T(T_matrix, S_1_matrix, D_eff, avg_u_all)
+
+# --- Initial conditions
+# Sparse Canopy
+Z_0 = 0.5
+DELTA = 0.08
+# Dense Canopy
+#Z_0 = 0.25
+#DELTA = 0.04
+
+NX, NY = 100, 100
+S_1_matrix = np.zeros((NX, NY)) # shape of the forest
+S_2_matrix = np.zeros((NX, NY)) # shape of the forest
+S_1_0_matrix = S_1_matrix
+T_matrix = np.zeros((NX,NY)) # shape of the forest 
+
+U_10_X = 5 # wind with speed 10 m/s in only the x-direction
+U_H_X = U_10_X*0.9
+U_B_STAR_X = U_10_X*KAPPA/np.ln(10/Z_0)
+AVG_U_V_X = U_H_X/ETA * (1-np.exp(-ETA))
+AVG_U_B_X = U_B_STAR_X/KAPPA * (H/(H-Z_0)*np.ln(H/Z_0)-1)
+
+# --- simulation conditions
+N = 100 # number of steps
+dt = 0.1 # length of time steps from paper in seconds
+dx = 0.5 # length of a "pixel" from paper in m
+
+for t in range(N):
+    S_1_matrix_new = calc_S_1(S_1_matrix, T_matrix, dt)
+    D_eff, D_eff = calc_D_eff()
+    avg_u_x = calc_avg_u_x()
+    T_new = calc_T(T_matrix, S_1_matrix, D_eff, avg_u_x)
