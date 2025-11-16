@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import convolve2d
 #Code, der die DGL löst oder so
 
 # Constants ? from the Table 2 
@@ -90,11 +91,19 @@ def calc_D_eff():
 
 # calculation of the Temperature => calculating a step
 
-def calc_T(T_matrix, S_1, D_eff, avg_u_x, avg_u_y=0):
+def calc_T(T_matrix, c_0, c_1, D_eff_x, D_eff_y, avg_u_x, dt, avg_u_y=0):
     T_matrix_new = np.copy(T_matrix)
-    #T_matrix_dx2 = 
-    for i in range(np.shape(T_matrix[0])):
-        for j in range(np.shape(T_matrix[1])):
+    dy2_kern = [[1,-2,1]]
+    dy_kern = [[-1/2,0,1/2]]
+    dx2_kern = [[1],[-2],[1]]
+    dx_kern = [[-1/2],[0],[1/2]]
+    T_matrix_dx2 = convolve2d(T_matrix, dx2_kern, mode='same', boundary='symm')
+    T_matrix_dy2 = convolve2d(T_matrix, dy2_kern, mode='same', boundary='symm')
+    T_matrix_dx = convolve2d(T_matrix, dx_kern, mode='same', boundary='symm')
+    T_matrix_dy = convolve2d(T_matrix, dy_kern, mode='same', boundary='symm')
+    dT_dt_matrix = c_1/c_0*(D_eff_x*T_matrix_dx2 + D_eff_y*T_matrix_dy2-avg_u_x*T_matrix_dx-avg_u_y*T_matrix_dy)
+    T_matrix_new = T_matrix_new + dT_dt_matrix*dt
+    return T_matrix
             
 
 
@@ -125,7 +134,11 @@ dt = 0.1 # length of time steps from paper in seconds
 dx = 0.5 # length of a "pixel" from paper in m
 
 for t in range(N):
-    S_1_matrix_new = calc_S_1(S_1_matrix, T_matrix, dt)
-    D_eff, D_eff = calc_D_eff()
+    D_eff_x, D_eff_y = calc_D_eff()
     avg_u_x = calc_avg_u_x()
-    T_new = calc_T(T_matrix, S_1_matrix, D_eff, avg_u_x)
+    S_1_matrix_new = calc_S_1(S_1_matrix, T_matrix, dt)
+    S_2_matrix_new = calc_S_2(S_2_matrix, T_matrix, avg_u_x, dt)
+    S_matrix_new = calc_S(S_1_matrix_new, S_2_matrix_new)
+    c_0 = calc_c_0(S_matrix_new)
+    c_1 = calc_c_1(S_matrix_new, c_0)
+    T_new = calc_T(T_matrix, c_0, c_1, D_eff_x, D_eff_y, avg_u_x, dt)
