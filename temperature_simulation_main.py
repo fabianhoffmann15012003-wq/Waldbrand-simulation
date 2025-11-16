@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.signal import convolve2d
-#Code, der die DGL löst oder so
 
 # Constants ? from the Table 2 
 FMC = 0.25
@@ -72,10 +71,22 @@ def calc_L(T_matrix):
     L_y = (np.sum(T_matrix[:,T_max_y]>T_dropped)-1)*dx
     return L_x, L_y
 
-def calc_omega():
-    print("\n--------------------- TO DO calc_omega() ---------------------\n")
-    omega_x = np.nan
-    omega_y = np.nan
+def calc_omega(T_matrix, NX, NY):
+    T_max_x = [np.argmax(T_matrix[i][0:]) for i in range(NX)]    #finding maxima in x direction
+    yA = yB = xA = xB = -1      #initialize values
+    for i in range(NX):     #finding endpoints xA, xB, yA, yB by condition
+        if yA < 0 and T_matrix[i][T_max_x[i]] > 550: #only once at beginning for y
+            yA = i
+            xA = T_max_x[i]
+        if T_matrix[i][T_max_x[i]] > 550:   #reset values until done
+            yB = i
+            if T_max_x[i] >= xB:    #check if new xB is actually larger than old one
+                xB = T_max_x[i]
+            if T_max_x[i] < xA:
+                xA = T_max_x[i]
+
+    omega_x = abs(xB-xA)*dx     #computing the difference between endpoints
+    omega_y = abs(yB-yA)*dx
     return omega_x, omega_y
 
 def calc_D_eff():
