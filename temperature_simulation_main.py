@@ -89,10 +89,7 @@ def calc_omega(T_matrix, NX, NY):
     omega_y = abs(yB-yA)*dx
     return omega_x, omega_y
 
-def calc_D_eff():
-    avg_u_x, avg_u_y = calc_avg_u_x(), 0
-    L_x, L_y = calc_L()
-    omega_x, omega_y = calc_omega()
+def calc_D_eff(L_x, L_y, omega_x, omega_y, avg_u_x, avg_u_y=0):
     D_eff_x = D_RB+A_D*avg_u_x*L_x*(1-np.exp(-GAMMA_D*omega_x))
     D_eff_y = D_RB+A_D*avg_u_y*L_y*(1-np.exp(-GAMMA_D*omega_y))
     return D_eff_x, D_eff_y
@@ -128,28 +125,35 @@ DELTA = 0.08
 #DELTA = 0.04
 
 NX, NY = 100, 100
-S_1_matrix = np.zeros((NX, NY)) # shape of the forest
-S_2_matrix = np.zeros((NX, NY)) # shape of the forest
-S_1_0_matrix = S_1_matrix
-T_matrix = np.zeros((NX,NY)) # shape of the forest 
+S_1_matrix = np.ones((NX, NY))*0.8 # shape of the forest
+S_2_matrix = np.ones((NX, NY))*0.8 # shape of the forest
+S_2_0_matrix = S_2_matrix
+T_matrix = np.ones((NX,NY)) # shape of the forest 
 
 U_10_X = 5 # wind with speed 10 m/s in only the x-direction
 U_H_X = U_10_X*0.9
-U_B_STAR_X = U_10_X*KAPPA/np.ln(10/Z_0)
+U_B_STAR_X = U_10_X*KAPPA/np.log(10/Z_0)
 AVG_U_V_X = U_H_X/ETA * (1-np.exp(-ETA))
-AVG_U_B_X = U_B_STAR_X/KAPPA * (H/(H-Z_0)*np.ln(H/Z_0)-1)
+AVG_U_B_X = U_B_STAR_X/KAPPA * (H/(H-Z_0)*np.log(H/Z_0)-1)
 
 # --- simulation conditions
-N = 100 # number of steps
+N = 1000 # number of steps
 dt = 0.1 # length of time steps from paper in seconds
 dx = 0.5 # length of a "pixel" from paper in m
 
-for t in range(N):
-    D_eff_x, D_eff_y = calc_D_eff()
-    avg_u_x = calc_avg_u_x()
+def step():
+    x_c = calc_x_c(S_2_matrix, S_2_0_matrix)
+    avg_u_x = calc_avg_u_x(x_c)
     S_1_matrix_new = calc_S_1(S_1_matrix, T_matrix, dt)
     S_2_matrix_new = calc_S_2(S_2_matrix, T_matrix, avg_u_x, dt)
     S_matrix_new = calc_S(S_1_matrix_new, S_2_matrix_new)
     c_0 = calc_c_0(S_matrix_new)
     c_1 = calc_c_1(S_matrix_new, c_0)
+    L_x, L_y = calc_L(T_matrix)
+    omega_x, omega_y = calc_omega(T_matrix, NX, NY)
+    D_eff_x, D_eff_y = calc_D_eff(L_x, L_y, omega_x, omega_y, avg_u_x)
     T_new = calc_T(T_matrix, c_0, c_1, D_eff_x, D_eff_y, avg_u_x, dt)
+
+
+
+print("DONE")
