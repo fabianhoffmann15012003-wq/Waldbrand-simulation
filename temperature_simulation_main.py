@@ -35,9 +35,12 @@ C_3 = ALPHA*A_2/C_PS
 C_4 = 1/(H*RHO_S*C_PS)
 KAPPA = 0.41 # Karman's Konstant
 
+def gauss2d(x, y, mx, my, s):
+    return 1./(2.*np.pi*s*s)*np.exp(-((x-mx)**2./(2.*s**2.)+(y-my)**2./(2.*s**2.)))
+
 class Sim:
 
-    def __init__(self, NX=100, NY=100, U_10_X=5, U_10_Y=0):
+    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0):
         # --- Initial conditions
         # Sparse Canopy
         Z_0 = 0.5
@@ -52,6 +55,9 @@ class Sim:
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
         self.T_matrix = np.ones((self.NX,self.NY))*T_A # shape of the forest 
+        for i in range(self.NX):
+            for j in range(self.NY):
+                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NY//2, self.NX//14)*700
 
         self.U_10_X = U_10_X # wind with speed 10 m/s in only the x-direction
         self.U_10_Y = U_10_Y # wind with speed 10 m/s in only the x-direction
@@ -190,12 +196,12 @@ def update(frame):
 simualtion = Sim()
 
 fig, ax = plt.subplots(figsize=(16,16))
-im = ax.imshow(simualtion.T_matrix)
+im = ax.imshow(simualtion.T_matrix, vmin=T_A)
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
             hspace = 0, wspace = 0)
 
-ani = animation.FuncAnimation(fig, update, frames=100, interval=20) #frames - the number of steps in the simulation
-ani.save('Animations/simple.gif', fps=1.5, savefig_kwargs={'pad_inches':0})
+ani = animation.FuncAnimation(fig, update, frames=500, interval=1) #frames - the number of steps in the simulation
+ani.save('Animations/simple.gif', fps=10, savefig_kwargs={'pad_inches':0})
 
 print("\n------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
 
