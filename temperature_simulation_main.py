@@ -3,6 +3,10 @@ from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
+
+from datetime import timedelta,datetime
+import time
+
 # Constants ? from the Table 2 
 FMC = 0.25
 H = 2
@@ -193,15 +197,27 @@ def update(frame):
     return [im]
 
 
+
+start = time.time()
+
 simualtion = Sim()
+frms = 1000
 
 fig, ax = plt.subplots(figsize=(16,16))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
             hspace = 0, wspace = 0)
 
-ani = animation.FuncAnimation(fig, update, frames=1000, interval=1) #frames - the number of steps in the simulation
+ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
 ani.save('Animations/simple.gif', fps=50, savefig_kwargs={'pad_inches':0})
+
+
+end = time.time()
+
+duration = end-start
+
+
+print(f"\n\tcalculating {frms} frames took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame")
 
 print("\n------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
 
