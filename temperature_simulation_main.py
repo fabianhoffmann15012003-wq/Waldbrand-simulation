@@ -50,14 +50,14 @@ class Sim:
         #DELTA = 0.04
 
         self.NX, self.NY = 100, 100
-        self.S_1_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
+        self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
         self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
         self.T_matrix = np.ones((self.NX,self.NY))*T_A # shape of the forest 
         for i in range(self.NX):
             for j in range(self.NY):
-                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NY//2, self.NX//14)*700
+                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NY//2, self.NX//20)*700
 
         self.U_10_X = U_10_X # wind with speed 10 m/s in only the x-direction
         self.U_10_Y = U_10_Y # wind with speed 10 m/s in only the x-direction
@@ -200,8 +200,8 @@ im = ax.imshow(simualtion.T_matrix, vmin=T_A)
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
             hspace = 0, wspace = 0)
 
-ani = animation.FuncAnimation(fig, update, frames=500, interval=1) #frames - the number of steps in the simulation
-ani.save('Animations/simple.gif', fps=10, savefig_kwargs={'pad_inches':0})
+ani = animation.FuncAnimation(fig, update, frames=1000, interval=1) #frames - the number of steps in the simulation
+ani.save('Animations/simple.gif', fps=50, savefig_kwargs={'pad_inches':0})
 
 print("\n------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
 
