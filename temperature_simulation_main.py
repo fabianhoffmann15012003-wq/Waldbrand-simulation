@@ -149,10 +149,10 @@ class Sim:
 
     def calc_T(self):
         T_matrix_new = np.copy(self.T_matrix)
-        dy2_kern = [[1,-2,1]]
-        dy_kern = [[-1/2,0,1/2]]
-        dx2_kern = [[1],[-2],[1]]
-        dx_kern = [[-1/2],[0],[1/2]]
+        dx2_kern = [[1,-2,1]]
+        dx_kern = [[1/2,0,-1/2]]
+        dy2_kern = [[1],[-2],[1]]
+        dy_kern = [[1/2],[0],[-1/2]]
         T_matrix_dx2 = convolve2d(self.T_matrix, dx2_kern, mode='same', boundary='symm')
         T_matrix_dy2 = convolve2d(self.T_matrix, dy2_kern, mode='same', boundary='symm')
         T_matrix_dx = convolve2d(self.T_matrix, dx_kern, mode='same', boundary='symm')
