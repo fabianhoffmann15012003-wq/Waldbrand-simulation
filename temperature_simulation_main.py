@@ -212,18 +212,32 @@ def update(frame):
 
 
 # handles the animation and is also coppied from the rudimentary pixel simulation
+def animating():
+    plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+
+    ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
+    ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0})
+
+# handles the creating of an Image displaying the development of S
+def S_development():
+    S_at_0 =simualtion.S_matrix
+
+    for i in range(frms):
+        simualtion.step(0)
+
+    S_diff= S_at_0-simualtion.S_matrix
+    print(np.max(S_diff))
+    S_diff = S_diff-np.min(S_diff)
+    S_diff = S_diff/np.max(S_diff)
+    plt.imsave("S_development/NEW.png", S_diff)
+
 start = time.time()
 
-simualtion = Sim()
-frms = 500
-
-fig, ax = plt.subplots(figsize=(16,16))
+simualtion = Sim(U_10_X=3)
+frms = 1000
+fig, ax = plt.subplots(figsize=(100,100))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
-plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
-            hspace = 0, wspace = 0)
-
-ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
-ani.save('Animations/simple.gif', fps=50, savefig_kwargs={'pad_inches':0})
+animating()
 
 
 end = time.time()
