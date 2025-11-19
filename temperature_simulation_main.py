@@ -38,6 +38,7 @@ C_2 = ALPHA*A_1/C_PS
 C_3 = ALPHA*A_2/C_PS
 C_4 = 1/(H*RHO_S*C_PS)
 KAPPA = 0.41 # Karman's Konstant
+SIGMA_B = 5.67*10**(-8) # Stefan-Boltzmann Constant
 
 def gauss2d(x, y, mx, my, s):
     return 1./(2.*np.pi*s*s)*np.exp(-((x-mx)**2./(2.*s**2.)+(y-my)**2./(2.*s**2.)))
@@ -45,7 +46,7 @@ def gauss2d(x, y, mx, my, s):
 
 class Sim:
 
-    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0):
+    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0, n=1):
         # --- Initial conditions
         # Sparse Canopy
         Z_0 = 0.5
@@ -64,8 +65,9 @@ class Sim:
         self.T_matrix = np.ones((self.NX,self.NY))*T_A 
         for i in range(self.NX):
             for j in range(self.NY):
-                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NY//2, np.min([self.NX, self.NY])//10)*(T_MAX_I-T_A)
+                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//8)*(T_MAX_I-T_A)
 
+        self.U = self.calc_U()
         # initial Speeds
         self.U_10_X = U_10_X # wind with speed 10 m/s in only the x-direction
         self.U_10_Y = U_10_Y # wind with speed 10 m/s in only the x-direction
@@ -77,32 +79,33 @@ class Sim:
         # --- simulation conditions
         self.dt = 0.1 # length of time steps from paper in seconds
         self.dx = 0.5 # length of a "pixel" from paper in m
+        self.n = n    # number of steps per step to speed up the animation
 
 
         
     #  --- calculations 
 
-    # calculates the varible c_0 that ist dependent on the matrix S
+    # calculates the matrix c_0 that ist dependent on the matrix S
     def calc_c_0(self):
         return ALPHA*self.S_matrix + (1-ALPHA)*LAMBDA*GAMMA + ALPHA*GAMMA*(1-self.S_matrix)
     
-    # calculates the varible c_1 that ist dependent on the matrix S and can be written as a product of c_0
+    # calculates the matrix c_1 that ist dependent on the matrix S and can be written as a product of c_0
     def calc_c_1(self):
         return self.c_0-ALPHA*self.S_matrix
     
     # calculates the matrix S_1  that is dependent on the Matrix T
     # S_1 describes the remaining fuell mass fraction of water
     def calc_S_1(self):
-        r_1 = C_S1*np.exp(-B_1/self.T_matrix)
-        return self.S_1_matrix-self.S_1_matrix*r_1*self.dt
+        self.r_1 = C_S1*np.exp(-B_1/self.T_matrix)
+        return self.S_1_matrix-self.S_1_matrix*self.r_1*self.dt
         
     # calculates the matrix S_2  that is dependent on the Matrix T and the average Speed u_avg
     # S_1 describes the remaining fuell mass fraction of combustibles
     def calc_S_2(self):
         r_2 = C_S2*np.exp(-B_2/self.T_matrix)
         r_m = R_M_0+R_M_C*(self.avg_u_x-1)
-        r_2t = (r_2*r_m)/(r_2+r_m)
-        return self.S_2_matrix-self.S_2_matrix*r_2t*self.dt
+        self.r_2t = (r_2*r_m)/(r_2+r_m)
+        return self.S_2_matrix-self.S_2_matrix*self.r_2t*self.dt
         
     # calculates the matrix S that is dependent on the Matrix S_1 and S_2
     # S_1 describes the total fuell mass fraction
@@ -157,6 +160,9 @@ class Sim:
         D_eff_y = D_RB+A_D*self.avg_u_y*self.L_y*(1-np.exp(-GAMMA_D*self.omega_y))
         return D_eff_x, D_eff_y
 
+    # calculates the Matrix U
+    def calc_U(self):
+        return A_NC*np.power(self.T_matrix-T_A, 1/3)+EPSILON*SIGMA_B*(np.power(self.T_matrix,2)+T_A**2)*(self.T_matrix+T_A)
 
 
 
@@ -175,30 +181,31 @@ class Sim:
         T_matrix_dy2 = convolve2d(self.T_matrix, dy2_kern, mode='same', boundary='symm')
         T_matrix_dx = convolve2d(self.T_matrix, dx_kern, mode='same', boundary='symm')
         T_matrix_dy = convolve2d(self.T_matrix, dy_kern, mode='same', boundary='symm')
-        dT_dt_matrix = self.c_1/self.c_0*(self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2-self.avg_u_x*T_matrix_dx-self.avg_u_y*T_matrix_dy)
+        dT_dt_matrix = self.c_1/self.c_0*(self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2-self.avg_u_x*T_matrix_dx-self.avg_u_y*T_matrix_dy)-C_2/self.c_0 *self.S_1_matrix*self.r_1+C_3/self.c_0*self.S_2_matrix*self.r_2t-C_4/self.c_0 *self.U*(self.T_matrix-T_A)
         T_matrix_new = T_matrix_new + dT_dt_matrix*self.dt
         return T_matrix_new
             
     # calculates a step of the simulation
     def step(self, step):
-        self.x_c = self.calc_x_c()
-        self.avg_u_x = self.calc_avg_u_x()
-        self.avg_u_y = 0
-        self.c_0 = self.calc_c_0()
-        self.c_1 = self.calc_c_1()
-        self.L_x, self.L_y = self.calc_L()
-        self.omega_x, self.omega_y = self.calc_omega()
-        self.D_eff_x, self.D_eff_y = self.calc_D_eff()
+        for i in range(self.n):
+            self.x_c = self.calc_x_c()
+            self.avg_u_x = self.calc_avg_u_x()
+            self.avg_u_y = 0
+            self.c_0 = self.calc_c_0()
+            self.c_1 = self.calc_c_1()
+            self.L_x, self.L_y = self.calc_L()
+            self.omega_x, self.omega_y = self.calc_omega()
+            self.D_eff_x, self.D_eff_y = self.calc_D_eff()
 
-        S_1_matrix_new = self.calc_S_1()
-        S_2_matrix_new = self.calc_S_2()
-        S_matrix_new = self.calc_S()
+            S_1_matrix_new = self.calc_S_1()
+            S_2_matrix_new = self.calc_S_2()
+            S_matrix_new = self.calc_S()
 
-        self.T_matrix = self.calc_T()
+            self.T_matrix = self.calc_T()
 
-        self.S_1_matrix = S_1_matrix_new
-        self.S_2_matrix = S_2_matrix_new
-        self.S_matrix = S_matrix_new
+            self.S_1_matrix = S_1_matrix_new
+            self.S_2_matrix = S_2_matrix_new
+            self.S_matrix = S_matrix_new
 
 
 
@@ -211,28 +218,32 @@ def update(frame):
 
 
 # handles the animation and is also coppied from the rudimentary pixel simulation
-print("\n------------------------------ ! ! ! ANFANG ! ! ! ------------------------------\n")
+print("\n------------------------------ ! ! ! ANFANG ! ! ! ------------------------------")
+print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
+dim_faktor = 3
+dim_size = 1
+nth_shown = 2
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown)
+frms = 1500
 
-simualtion = Sim()
-frms = 100
-
-fig, ax = plt.subplots(figsize=(16,16))
+fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
             hspace = 0, wspace = 0)
 
 ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
-ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0})
+ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="pillow")
 
 
 end = time.time()
 
 duration = end-start
 
+print(f"\n\tcalculating {frms} frames ( {dim_size*100} x {dim_faktor*dim_size*100} ) showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame")
 
-print(f"\n\tcalculating {frms} frames took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame")
-
-print("\n------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
+print(f"\n                                 {datetime.now().time()}")
+print("------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
+print("Hallo---------------------------------------------------------------------------")
