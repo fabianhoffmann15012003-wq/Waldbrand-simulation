@@ -64,7 +64,7 @@ class Sim:
         self.T_matrix = np.ones((self.NX,self.NY))*T_A 
         for i in range(self.NX):
             for j in range(self.NY):
-                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NY//2, self.NX//20)*(T_MAX_I-T_A)
+                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NY//2, np.min([self.NX, self.NY])//10)*(T_MAX_I-T_A)
 
         # initial Speeds
         self.U_10_X = U_10_X # wind with speed 10 m/s in only the x-direction
@@ -75,7 +75,6 @@ class Sim:
         self.AVG_U_B_X = self.U_B_STAR_X/KAPPA * (H/(H-Z_0)*np.log(H/Z_0)-1)
 
         # --- simulation conditions
-        self.N = 1000 # number of steps
         self.dt = 0.1 # length of time steps from paper in seconds
         self.dx = 0.5 # length of a "pixel" from paper in m
 
@@ -212,32 +211,21 @@ def update(frame):
 
 
 # handles the animation and is also coppied from the rudimentary pixel simulation
-def animating():
-    plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, hspace = 0, wspace = 0)
+print("\n------------------------------ ! ! ! ANFANG ! ! ! ------------------------------\n")
 
-    ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
-    ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0})
-
-# handles the creating of an Image displaying the development of S
-def S_development():
-    S_at_0 =simualtion.S_matrix
-
-    for i in range(frms):
-        simualtion.step(0)
-
-    S_diff= S_at_0-simualtion.S_matrix
-    print(np.max(S_diff))
-    S_diff = S_diff-np.min(S_diff)
-    S_diff = S_diff/np.max(S_diff)
-    plt.imsave("S_development/NEW.png", S_diff)
 
 start = time.time()
 
-simualtion = Sim(U_10_X=3)
-frms = 1000
-fig, ax = plt.subplots(figsize=(100,100))
+simualtion = Sim()
+frms = 100
+
+fig, ax = plt.subplots(figsize=(16,16))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
-animating()
+plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
+            hspace = 0, wspace = 0)
+
+ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
+ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0})
 
 
 end = time.time()
@@ -248,4 +236,3 @@ duration = end-start
 print(f"\n\tcalculating {frms} frames took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame")
 
 print("\n------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
-
