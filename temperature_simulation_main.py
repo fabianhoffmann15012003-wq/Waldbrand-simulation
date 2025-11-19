@@ -55,7 +55,7 @@ class Sim:
         #DELTA = 0.04
 
         # Initial Shape, Fuel and Temperature
-        self.NX, self.NY = 100, 100
+        self.NX, self.NY = NX, NY
         self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
         self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
         self.S_2_0_matrix = self.S_2_matrix
