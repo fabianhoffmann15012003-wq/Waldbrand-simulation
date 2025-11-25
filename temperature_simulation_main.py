@@ -46,14 +46,14 @@ def gauss2d(x, y, mx, my, s):
 
 class Sim:
 
-    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0, n=1):
+    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0, n=1, sig=8):
         # --- Initial conditions
         # Sparse Canopy
-        Z_0 = 0.5
-        DELTA = 0.08
+        #Z_0 = 0.5
+        #DELTA = 0.08
         # Dense Canopy
-        #Z_0 = 0.25
-        #DELTA = 0.04
+        Z_0 = 0.25
+        DELTA = 0.04
 
         # Initial Shape, Fuel and Temperature
         self.NX, self.NY = NX, NY
@@ -65,7 +65,7 @@ class Sim:
         self.T_matrix = np.ones((self.NX,self.NY))*T_A 
         for i in range(self.NX):
             for j in range(self.NY):
-                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//8)*(T_MAX_I-T_A)
+                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
 
         self.U = self.calc_U()
         # initial Speeds
@@ -224,9 +224,10 @@ print(f"                                 {datetime.now().time()}\n")
 
 start = time.time()
 dim_faktor = 3
-dim_size = 1
+dim_size = 2
 nth_shown = 2
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown)
+S_begin = simualtion.S_matrix
 frms = 1500
 
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
@@ -237,13 +238,16 @@ plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
 ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
 ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="pillow")
 
-
 end = time.time()
-
 duration = end-start
+print(f"\n\tcalculating {frms} frames ( {dim_size*100} x {dim_faktor*dim_size*100} ) showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
 
-print(f"\n\tcalculating {frms} frames ( {dim_size*100} x {dim_faktor*dim_size*100} ) showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame")
+# Showing the difference in S
+S_end = simualtion.S_matrix
+S_diff = S_begin-S_end
+plt.imsave("S_development/NEW.png", S_diff)
+print(f"\n\tthem maximum of the change in S ist {np.max(S_diff):.5f}\n")
+
 
 print(f"\n                                 {datetime.now().time()}")
 print("------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
-print("Hallo---------------------------------------------------------------------------")
