@@ -10,8 +10,8 @@ import time
 from warnings import catch_warnings
 
 # Constants ? from the Table 2 
-FMC = 0.25
-H = 2
+FMC = 0.25 # NOT USED
+H = 2 
 T_A = 300.0 #interpreting as outside Temperature ~25°C
 T_MAX_I = 1200.0 # interpreting as hottest possible wildfire ~927°C
 RHO_G = 1
@@ -28,7 +28,7 @@ D_RB = 0.1
 R_M_0 = 0.002
 R_M_C = 0.004
 GAMMA_D = 0.03
-SIGMA = 20
+SIGMA = 20 # NOT USED
 A_NC = 0.2
 A_D = 0.125
 ETA = 3
@@ -183,9 +183,14 @@ class Sim:
         T_matrix_dy2 = convolve2d(self.T_matrix, dy2_kern, mode='same', boundary='symm')
         T_matrix_dx = convolve2d(self.T_matrix, dx_kern, mode='same', boundary='symm')
         T_matrix_dy = convolve2d(self.T_matrix, dy_kern, mode='same', boundary='symm')
-        dT_dt_matrix = self.c_1/self.c_0*(self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2-self.avg_u_x*T_matrix_dx-self.avg_u_y*T_matrix_dy)
-        #-C_2/self.c_0 *self.S_1_matrix*self.r_1+C_3/self.c_0*self.S_2_matrix*self.r_2t-C_4/self.c_0 *self.U*(self.T_matrix-T_A)
-        T_matrix_new = T_matrix_new + dT_dt_matrix*self.dt
+        dispersion = self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2
+        advection = self.avg_u_x*T_matrix_dx + self.avg_u_y*T_matrix_dy
+        reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
+        convection = C_4/self.c_0 * self.U*(self.T_matrix-T_A)
+        dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
+        T_matrix_new = T_matrix_new + dT_dt_matrix * self.dt
+        # making sure the Temperature doesnt dropp to much
+        T_matrix_new[T_matrix_new<T_A]=T_A
         return T_matrix_new
             
     # calculates a step of the simulation
@@ -222,6 +227,7 @@ def update(frame):
 
 
 np.seterr(all='raise')
+np.seterr(under='ignore')
 
 # handles the animation and is also coppied from the rudimentary pixel simulation
 print("\n------------------------------ ! ! ! ANFANG ! ! ! ------------------------------")
@@ -229,12 +235,12 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 2
+dim_faktor = 3
 dim_size = 1
 nth_shown = 2
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown)
 S_begin = simualtion.S_matrix
-frms = 2000
+frms = 1000
 
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
