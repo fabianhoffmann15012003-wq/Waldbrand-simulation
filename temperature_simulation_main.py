@@ -7,11 +7,13 @@ from matplotlib import animation
 from datetime import timedelta,datetime
 import time
 
+from warnings import catch_warnings
+
 # Constants ? from the Table 2 
 FMC = 0.25
 H = 2
-T_A = 300 #interpreting as outside Temperature ~25°C
-T_MAX_I = 1200 # interpreting as hottest possible wildfire ~927°C
+T_A = 300.0 #interpreting as outside Temperature ~25°C
+T_MAX_I = 1200.0 # interpreting as hottest possible wildfire ~927°C
 RHO_G = 1
 RHO_S = 700
 C_PG = 1043
@@ -41,7 +43,7 @@ KAPPA = 0.41 # Karman's Konstant
 SIGMA_B = 5.67*10**(-8) # Stefan-Boltzmann Constant
 
 def gauss2d(x, y, mx, my, s):
-    return 1./(2.*np.pi*s*s)*np.exp(-((x-mx)**2./(2.*s**2.)+(y-my)**2./(2.*s**2.)))
+    return np.exp(-((x-mx)**2./(2.*s**2.)+(y-my)**2./(2.*s**2.)))
 
 
 class Sim:
@@ -172,8 +174,8 @@ class Sim:
         T_matrix_new = np.copy(self.T_matrix)
         # spacial derivatives using central difference
         # df/dx -> (f(x-1)-f(x+1))/2
-        dx_kern = [[1/2,0,-1/2]]
-        dy_kern = [[1/2],[0],[-1/2]]
+        dx_kern = [[1.0/2,0,-1.0/2]]
+        dy_kern = [[1.0/2],[0],[-1.0/2]]
         # d^2f/dx^2 -> f(x-1)-2f(x)+f(x+1)
         dx2_kern = [[1,-2,1]]
         dy2_kern = [[1],[-2],[1]]
@@ -181,7 +183,8 @@ class Sim:
         T_matrix_dy2 = convolve2d(self.T_matrix, dy2_kern, mode='same', boundary='symm')
         T_matrix_dx = convolve2d(self.T_matrix, dx_kern, mode='same', boundary='symm')
         T_matrix_dy = convolve2d(self.T_matrix, dy_kern, mode='same', boundary='symm')
-        dT_dt_matrix = self.c_1/self.c_0*(self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2-self.avg_u_x*T_matrix_dx-self.avg_u_y*T_matrix_dy)-C_2/self.c_0 *self.S_1_matrix*self.r_1+C_3/self.c_0*self.S_2_matrix*self.r_2t-C_4/self.c_0 *self.U*(self.T_matrix-T_A)
+        dT_dt_matrix = self.c_1/self.c_0*(self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2-self.avg_u_x*T_matrix_dx-self.avg_u_y*T_matrix_dy)
+        #-C_2/self.c_0 *self.S_1_matrix*self.r_1+C_3/self.c_0*self.S_2_matrix*self.r_2t-C_4/self.c_0 *self.U*(self.T_matrix-T_A)
         T_matrix_new = T_matrix_new + dT_dt_matrix*self.dt
         return T_matrix_new
             
@@ -198,7 +201,9 @@ class Sim:
             self.D_eff_x, self.D_eff_y = self.calc_D_eff()
 
             S_1_matrix_new = self.calc_S_1()
+            S_1_matrix_new[S_1_matrix_new<0]=0
             S_2_matrix_new = self.calc_S_2()
+            S_2_matrix_new[S_2_matrix_new<0]=0
             S_matrix_new = self.calc_S()
 
             self.T_matrix = self.calc_T()
@@ -216,6 +221,7 @@ def update(frame):
     return [im]
 
 
+np.seterr(all='raise')
 
 # handles the animation and is also coppied from the rudimentary pixel simulation
 print("\n------------------------------ ! ! ! ANFANG ! ! ! ------------------------------")
@@ -223,12 +229,12 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 3
-dim_size = 2
+dim_faktor = 2
+dim_size = 1
 nth_shown = 2
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown)
 S_begin = simualtion.S_matrix
-frms = 1500
+frms = 2000
 
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
