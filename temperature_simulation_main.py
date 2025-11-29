@@ -244,6 +244,15 @@ frms = 1000
 
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A)
+
+cbar_ax = fig.add_axes([0.02, 0.25, 0.02, 0.5])  
+cbar = fig.colorbar(im, cax=cbar_ax)
+cbar.set_label("Temperature in K", rotation=270, labelpad=15, color = 'white')
+for tick in cbar.ax.get_yticklabels():
+    tick.set_color('white')
+
+ax.axis('off')
+
 plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0, 
             hspace = 0, wspace = 0)
 
