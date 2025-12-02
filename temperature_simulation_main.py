@@ -79,7 +79,7 @@ class Sim:
         self.AVG_U_B_X = self.U_B_STAR_X/KAPPA * (H/(H-Z_0)*np.log(H/Z_0)-1)
 
         # --- simulation conditions
-        self.dt = 0.1 # length of time steps from paper in seconds
+        self.dt = 0.02 # length of time steps from paper in seconds
         self.dx = 0.5 # length of a "pixel" from paper in m
         self.n = n    # number of steps per step to speed up the animation
 
@@ -179,10 +179,10 @@ class Sim:
         # d^2f/dx^2 -> f(x-1)-2f(x)+f(x+1)
         dx2_kern = [[1,-2,1]]
         dy2_kern = [[1],[-2],[1]]
-        T_matrix_dx2 = convolve2d(self.T_matrix, dx2_kern, mode='same', boundary='symm')
-        T_matrix_dy2 = convolve2d(self.T_matrix, dy2_kern, mode='same', boundary='symm')
-        T_matrix_dx = convolve2d(self.T_matrix, dx_kern, mode='same', boundary='symm')
-        T_matrix_dy = convolve2d(self.T_matrix, dy_kern, mode='same', boundary='symm')
+        T_matrix_dx2 = convolve2d(self.T_matrix, dx2_kern, mode='same', boundary='symm') / self.dx**2
+        T_matrix_dy2 = convolve2d(self.T_matrix, dy2_kern, mode='same', boundary='symm') / self.dx**2
+        T_matrix_dx = convolve2d(self.T_matrix, dx_kern, mode='same', boundary='symm') / self.dx
+        T_matrix_dy = convolve2d(self.T_matrix, dy_kern, mode='same', boundary='symm') / self.dx
         dispersion = self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2
         advection = self.avg_u_x*T_matrix_dx + self.avg_u_y*T_matrix_dy
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
@@ -190,7 +190,7 @@ class Sim:
         dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
         T_matrix_new = T_matrix_new + dT_dt_matrix * self.dt
         # making sure the Temperature doesnt dropp to much
-        T_matrix_new[T_matrix_new<T_A]=T_A
+        #T_matrix_new[T_matrix_new<T_A]=T_A
         return T_matrix_new
             
     # calculates a step of the simulation
@@ -221,6 +221,7 @@ class Sim:
 
 def update(frame):
     im.set_data(simualtion.T_matrix)
+    im.set_clim(vmin=T_A, vmax=2500)
     ax.axis('off')
     simualtion.step(frame)
     return [im]
@@ -243,7 +244,7 @@ S_begin = simualtion.S_matrix
 frms = 1000
 
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
-im = ax.imshow(simualtion.T_matrix, vmin=T_A)
+im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
 cbar_ax = fig.add_axes([0.02, 0.25, 0.02, 0.5])  
 cbar = fig.colorbar(im, cax=cbar_ax)
