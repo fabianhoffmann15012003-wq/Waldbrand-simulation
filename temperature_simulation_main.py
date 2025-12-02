@@ -79,7 +79,7 @@ class Sim:
         self.AVG_U_B_X = self.U_B_STAR_X/KAPPA * (H/(H-Z_0)*np.log(H/Z_0)-1)
 
         # --- simulation conditions
-        self.dt = 0.02 # length of time steps from paper in seconds
+        self.dt = 0.1 # length of time steps from paper in seconds
         self.dx = 0.5 # length of a "pixel" from paper in m
         self.n = n    # number of steps per step to speed up the animation
 
