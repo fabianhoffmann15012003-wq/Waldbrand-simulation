@@ -214,16 +214,12 @@ class Sim:
             self.omega_x, self.omega_y = self.calc_omega()
             self.D_eff_x, self.D_eff_y = self.calc_D_eff()
 
-            S_1_matrix_new = self.calc_S_1()
-            S_1_matrix_new[S_1_matrix_new<0]=0
-            S_2_matrix_new = self.calc_S_2()
-            S_2_matrix_new[S_2_matrix_new<0]=0
-            S_matrix_new = self.calc_S()
+            self.S_1_matrix = self.calc_S_1()
+            self.S_1_matrix[self.S_1_matrix<0]=0
+            self.S_2_matrix = self.calc_S_2()
+            self.S_2_matrix[self.S_2_matrix<0]=0
+            self.S_matrix = self.calc_S()
 
-
-            self.S_1_matrix = S_1_matrix_new
-            self.S_2_matrix = S_2_matrix_new
-            self.S_matrix = S_matrix_new
             
             self.T_matrix = self.calc_T()
 
