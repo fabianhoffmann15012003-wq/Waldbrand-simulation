@@ -64,15 +64,6 @@ class Sim:
         self.NX, self.NY = NX, NY
         self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
         self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
-
-
-        #random uniform fuel change
-        #self.randomizer = np.random.rand(self.NX, self.NY) / 4.0
-        #self.S_1_matrix += self.randomizer
-        #self.S_2_matrix -= self.randomizer
-
-        
-
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
         # Temperature is spread by a gaussian in the middle
@@ -267,7 +258,7 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 4
+dim_faktor = 3
 dim_size = 1
 nth_shown = 3
 s_T = "two Gauss"
@@ -275,7 +266,7 @@ simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start
 S_begin = simualtion.S_matrix
 frms = 800
 
-print(f"Size: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames: {frms}")
+print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames: {frms}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
