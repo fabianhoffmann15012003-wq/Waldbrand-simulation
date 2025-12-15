@@ -63,6 +63,15 @@ class Sim:
         self.NX, self.NY = NX, NY
         self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
         self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
+
+
+        #random uniform fuel change
+        #self.randomizer = np.random.rand(self.NX, self.NY) / 4.0
+        #self.S_1_matrix += self.randomizer
+        #self.S_2_matrix -= self.randomizer
+
+        
+
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
         # Temperature is spread by a gaussian in the middle
