@@ -48,9 +48,10 @@ def gauss2d(x, y, mx, my, s):
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
+
 class Sim:
 
-    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0, n=1, sig=8):
+    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0, n=1, sig=8, start="one Gauss"):
         # --- Initial conditions
         # Sparse Canopy
         #Z_0 = 0.5
@@ -76,10 +77,22 @@ class Sim:
         self.S_matrix = self.calc_S()
         # Temperature is spread by a gaussian in the middle
         self.T_matrix = np.ones((self.NX,self.NY))*T_A 
-        for i in range(self.NX):
-            for j in range(self.NY):
-                self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
-                #self.T_matrix[i,j] += gauss2d_spreaded(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+        if start=="one Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+        elif start=="spreaded Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d_spreaded(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+        elif start=="two Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//6, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//6, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+        else:
+            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\" or \"two Gauss\"\n")
+
 
         self.U = self.calc_U()
         # initial Speeds
@@ -254,13 +267,15 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 3
+dim_faktor = 4
 dim_size = 1
-nth_shown = 2
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown)
+nth_shown = 3
+s_T = "two Gauss"
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_matrix
-frms = 1000
+frms = 800
 
+print(f"Size: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames: {frms}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
@@ -280,7 +295,7 @@ ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="
 
 end = time.time()
 duration = end-start
-print(f"\n\tcalculating {frms} frames ( {dim_size*100} x {dim_faktor*dim_size*100} ) showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
+print(f"\n\tcalculating {frms} frames showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
 
 # Showing the difference in S
 S_end = simualtion.S_matrix
