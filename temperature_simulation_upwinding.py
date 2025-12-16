@@ -42,11 +42,16 @@ C_4 = 1/(H*RHO_S*C_PS)
 KAPPA = 0.41 # Karman's Konstant
 SIGMA_B = 5.67*10**(-8) # Stefan-Boltzmann Constant
 
+
+# Functions for different starting ditributions of the temperature
 def gauss2d(x, y, mx, my, s):
     return np.exp(-((x-mx)**2./(2.*s**2.)+(y-my)**2./(2.*s**2.)))
 
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
+
+def box(x,y):
+    return (x<60)and(x>40)and(y<60)and(y>40)
 
 
 class Sim:
@@ -99,8 +104,12 @@ class Sim:
         elif start=="Gradient":
             for i in range(75):
                 self.T_matrix[:,i+1] += (T_MAX_I-T_A)*(1-(i+1)/75)*0.8
+        elif start=="box":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j)
         else:
-            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\" or \"Gradient\"\n")
+            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
 
 
         self.U = self.calc_U()
@@ -279,7 +288,7 @@ start = time.time()
 dim_faktor = 2
 dim_size = 1
 nth_shown = 2
-s_T = "Gradient"
+s_T = "box"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_matrix
 frms = 500
