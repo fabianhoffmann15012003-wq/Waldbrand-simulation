@@ -75,7 +75,7 @@ class Sim:
         #self.S_1_matrix[0:NX, 120:140] = 0.1
 
         #fuel gradient
-        self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
+        #self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
 
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
@@ -92,8 +92,10 @@ class Sim:
         elif start=="two Gauss":
             for i in range(self.NX):
                 for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//6, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//6, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//8, self.NX//2, np.min([self.NX, self.NY])//(sig*1.8))*(T_MAX_I-T_A)
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//8, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)*0.6
+        elif start=="wall":
+            self.T_matrix[:,self.NY//100:2*self.NY//50] = T_MAX_I
         else:
             raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\" or \"two Gauss\"\n")
 
@@ -256,7 +258,7 @@ class Sim:
 
 def update(frame):
     im.set_data(simualtion.T_matrix)
-    im.set_clim(vmin=T_A, vmax=2500)
+    im.set_clim(vmin=T_A, vmax=1400)
     ax.axis('off')
     simualtion.step(frame)
     return [im]
@@ -271,13 +273,13 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 3
+dim_faktor = 2
 dim_size = 1
-nth_shown = 3
-s_T = "one Gauss"
+nth_shown = 2
+s_T = "two Gauss"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_matrix
-frms = 800
+frms = 500
 
 print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames: {frms}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
