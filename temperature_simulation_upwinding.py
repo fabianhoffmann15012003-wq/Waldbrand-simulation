@@ -96,8 +96,11 @@ class Sim:
                     self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//8, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)*0.6
         elif start=="wall":
             self.T_matrix[:,self.NY//100:2*self.NY//50] = T_MAX_I
+        elif start=="Gradient":
+            for i in range(75):
+                self.T_matrix[:,i+1] += (T_MAX_I-T_A)*(1-(i+1)/75)*0.8
         else:
-            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\" or \"two Gauss\"\n")
+            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\" or \"Gradient\"\n")
 
 
         self.U = self.calc_U()
@@ -258,7 +261,7 @@ class Sim:
 
 def update(frame):
     im.set_data(simualtion.T_matrix)
-    im.set_clim(vmin=T_A, vmax=1400)
+    im.set_clim(vmin=T_A, vmax=2500)
     ax.axis('off')
     simualtion.step(frame)
     return [im]
@@ -276,7 +279,7 @@ start = time.time()
 dim_faktor = 2
 dim_size = 1
 nth_shown = 2
-s_T = "two Gauss"
+s_T = "Gradient"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_matrix
 frms = 500
