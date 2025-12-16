@@ -64,6 +64,19 @@ class Sim:
         self.NX, self.NY = NX, NY
         self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
         self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
+
+        #random uniform fuel change 
+        #self.randomizer = np.random.rand(self.NX, self.NY) / 4.0
+        #self.S_1_matrix += self.randomizer
+        #self.S_2_matrix -= self.randomizer
+
+        #fuel break
+        #self.S_2_matrix[0:NX, 120:140] = 0.1
+        #self.S_1_matrix[0:NX, 120:140] = 0.1
+
+        #fuel gradient
+        self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
+
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
         # Temperature is spread by a gaussian in the middle
@@ -118,7 +131,7 @@ class Sim:
         return self.S_1_matrix-self.S_1_matrix*self.r_1*self.dt
         
     # calculates the matrix S_2  that is dependent on the Matrix T and the average Speed u_avg
-    # S_1 describes the remaining fuell mass fraction of combustibles
+    # S_2 describes the remaining fuell mass fraction of combustibles
     def calc_S_2(self):
         r_2 = C_S2*np.exp(-B_2/self.T_matrix)
         r_m = R_M_0+R_M_C*(self.avg_u_x-1)
@@ -215,7 +228,7 @@ class Sim:
         dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
         T_matrix_new = T_matrix_new + dT_dt_matrix * self.dt
         # making sure the Temperature doesnt dropp to much
-        #T_matrix_new[T_matrix_new<T_A]=T_A
+        T_matrix_new[T_matrix_new<T_A]=T_A
         return T_matrix_new
             
     # calculates a step of the simulation
@@ -261,7 +274,7 @@ start = time.time()
 dim_faktor = 3
 dim_size = 1
 nth_shown = 3
-s_T = "two Gauss"
+s_T = "one Gauss"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_matrix
 frms = 800
