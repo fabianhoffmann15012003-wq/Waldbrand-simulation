@@ -50,8 +50,8 @@ def gauss2d(x, y, mx, my, s):
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
-def box(x,y):
-    return (x<60)and(x>40)and(y<60)and(y>40)
+def box(x,y, y0=75*2, y1=85*2, x0=235*2, x1=265*2):
+    return (x<x1)and(x>x0)and(y<y1)and(y>y0)
 
 
 class Sim:
@@ -68,7 +68,8 @@ class Sim:
         # Initial Shape, Fuel and Temperature
         self.NX, self.NY = NX, NY
         self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
-        self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
+        self.S_1_matrix[0:NX, NY//2:3*NY//5] = 0
+        self.S_2_matrix = np.ones((self.NX, self.NY)) - self.S_1_matrix # shape of the forest
 
         #random uniform fuel change 
         #self.randomizer = np.random.rand(self.NX, self.NY) / 4.0
@@ -287,13 +288,13 @@ print(f"                                 {datetime.now().time()}\n")
 start = time.time()
 dim_faktor = 2
 dim_size = 1
-nth_shown = 2
-s_T = "box"
+nth_shown = 4
+s_T = "one Gauss"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
-S_begin = simualtion.S_matrix
-frms = 500
+S_begin = simualtion.S_1_matrix
+frms = 200
 
-print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames: {frms}")
+print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", numer of frames shown: {frms}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
@@ -314,11 +315,12 @@ ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="
 end = time.time()
 duration = end-start
 print(f"\n\tcalculating {frms} frames showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
+print(f"\tSimulation of Size {dim_size*100*simualtion.dx}m x {dim_faktor*dim_size*100*simualtion.dx}m, a duration of {frms*nth_shown*simualtion.dt}s and a wind speed of {simualtion.U_10_X}\n")
 
 # Showing the difference in S
 S_end = simualtion.S_matrix
 S_diff = S_begin-S_end
-plt.imsave("S_development/NEW.png", S_diff)
+plt.imsave("S_development/NEW.png", S_begin)
 print(f"\n\tthem maximum of the change in S ist {np.max(S_diff):.5f}\n")
 
 
