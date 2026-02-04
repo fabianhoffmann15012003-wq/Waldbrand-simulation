@@ -51,7 +51,7 @@ def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
 def box(x,y):
-    return (x<60)and(x>40)and(y<60)and(y>40)
+    return (y<170)and(y>150)and(x<530)and(x>470)
 
 
 class Sim:
@@ -76,8 +76,8 @@ class Sim:
         #self.S_2_matrix -= self.randomizer
 
         #fuel break
-        self.S_2_matrix[0:NX, 120:170] = 0.1
-        self.S_1_matrix[0:NX, 120:170] = 0.1
+        #self.S_2_matrix[0:NX, 120:170] = 10**(-9)
+        #self.S_1_matrix[0:NX, 120:170] = 1-10**(-9)
 
         #fuel gradient
         #self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
@@ -215,7 +215,7 @@ class Sim:
         return self.S_2_matrix/self.S_2_0_matrix
     
     # calculates the varible u_avg_x that is dependent on the varible x_c
-    # it describes the average speed over the forest an at this point is only in the x-Direction as the y-Paart =0
+    # it describes the average speed over the forest and at this point is only in the x-Direction as the y-Paart =0
     def calc_avg_u_x(self):
         return self.AVG_U_V_X+(self.AVG_U_B_X-self.AVG_U_V_X)*(1-self.x_c)
 
@@ -341,15 +341,15 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 2
-dim_size = 1
-nth_shown = 4
-s_T = "one Gauss"
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
+dim_faktor = 1
+dim_size = 10
+nth_shown = 20
+s_T = "box"
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3)
 S_begin = simualtion.S_matrix
-frms = 500
+frms = 1250
 
-print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames: {frms}")
+print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames to calculate: {frms*nth_shown}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
@@ -369,7 +369,8 @@ ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="
 
 end = time.time()
 duration = end-start
-print(f"\n\tcalculating {frms} frames showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
+print(f"\n\t{frms} frames while showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
+print(f"\tSimulation of Size {dim_size*100*simualtion.dx}m x {dim_faktor*dim_size*100*simualtion.dx}m, a duration of {frms*nth_shown*simualtion.dt}s and a wind speed of {simualtion.U_10_X}\n")
 
 # Showing the difference in S
 S_end = simualtion.S_matrix
