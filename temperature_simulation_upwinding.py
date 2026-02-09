@@ -286,15 +286,15 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 2
-dim_size = 1
-nth_shown = 4
-s_T = "one Gauss"
+dim_faktor = 1
+dim_size = 10
+nth_shown = 20
+s_T = "box"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_1_matrix
-frms = 200
+frms = 1250
 
-print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", numer of frames shown: {frms}")
+print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames to calculate: {frms*nth_shown}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
@@ -314,13 +314,13 @@ ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="
 
 end = time.time()
 duration = end-start
-print(f"\n\tcalculating {frms} frames showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
+print(f"\n\t{frms} frames while showing every {nth_shown}-nth frame took {duration//60}min, {duration%60:.5f}s, that is approximately {duration/frms:.5f}s per frame\n")
 print(f"\tSimulation of Size {dim_size*100*simualtion.dx}m x {dim_faktor*dim_size*100*simualtion.dx}m, a duration of {frms*nth_shown*simualtion.dt}s and a wind speed of {simualtion.U_10_X}\n")
 
 # Showing the difference in S
 S_end = simualtion.S_matrix
 S_diff = S_begin-S_end
-plt.imsave("S_development/NEW.png", S_begin)
+plt.imsave("S_development/NEW.png", S_diff)
 print(f"\n\tthem maximum of the change in S ist {np.max(S_diff):.5f}\n")
 
 
