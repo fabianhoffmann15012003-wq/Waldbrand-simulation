@@ -50,13 +50,12 @@ def gauss2d(x, y, mx, my, s):
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
-def box(x,y, y0=75*2, y1=85*2, x0=235*2, x1=265*2):
-    return (x<x1)and(x>x0)and(y<y1)and(y>y0)
-
+def box(x,y, NX):
+    return (y < (NX//2 + 50)) and (y > (NX//2 - 50)) and (x < (NX//2+50)) and (x > (NX//2-50))
 
 class Sim:
 
-    def __init__(self, NX=100, NY=100, U_10_X=10, U_10_Y=0, n=1, sig=8, start="one Gauss"):
+    def __init__(self, NX=100, NY=100, U_10_X=6, U_10_Y=0, n=1, sig=8, start="one Gauss"):
         # --- Initial conditions
         # Sparse Canopy
         #Z_0 = 0.5
@@ -108,7 +107,7 @@ class Sim:
         elif start=="box":
             for i in range(self.NX):
                 for j in range(self.NY):
-                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j)
+                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX)
         else:
             raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
 
@@ -286,13 +285,13 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 1
-dim_size = 10
+dim_faktor = 2
+dim_size = 5
 nth_shown = 20
 s_T = "box"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_1_matrix
-frms = 1250
+frms = 500
 
 print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames to calculate: {frms*nth_shown}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
