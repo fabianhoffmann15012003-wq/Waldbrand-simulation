@@ -50,8 +50,8 @@ def gauss2d(x, y, mx, my, s):
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
-def box(x,y):
-    return (y<170)and(y>150)and(x<530)and(x>470)
+def box(x,y, NX):
+    return (y < (NX//2 + 50)) and (y > (NX//2 - 50)) and (x < (NX+50)) and (x > (NX-50))
 
 
 class Sim:
@@ -172,7 +172,7 @@ class Sim:
         elif start=="box":
             for i in range(self.NX):
                 for j in range(self.NY):
-                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j)
+                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX)
         else:
             raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
 
@@ -341,15 +341,18 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 1
-dim_size = 10
+
+#choose conditions / size of the simulation
+dim_faktor = 2
+dim_size = 5
 nth_shown = 20
 s_T = "box"
+
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3)
 S_begin = simualtion.S_matrix
-frms = 1250
+frms = 500
 
-print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames to calculate: {frms*nth_shown}")
+print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, number of frames to calculate: {frms*nth_shown}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
@@ -365,7 +368,7 @@ plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
             hspace = 0, wspace = 0)
 
 ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
-ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="pillow")
+ani.save('Results_for_report/NEW_T.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="pillow")
 
 end = time.time()
 duration = end-start
@@ -375,7 +378,7 @@ print(f"\tSimulation of Size {dim_size*100*simualtion.dx}m x {dim_faktor*dim_siz
 # Showing the difference in S
 S_end = simualtion.S_matrix
 S_diff = S_begin-S_end
-plt.imsave("S_development/NEW.png", S_diff)
+plt.imsave("Results_for_report/NEW_S.png", S_diff)
 print(f"\n\tthem maximum of the change in S ist {np.max(S_diff):.5f}\n")
 
 
