@@ -51,7 +51,7 @@ def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
 def box(x,y, NX):
-    return (y < (NX//2 + 50)) and (y > (NX//2 - 50)) and (x < (NX+50)) and (x > (NX-50))
+    return (y < (NX//2 + 50)) and (y > (NX//2 - 50)) and (x < (NX//2+50)) and (x > (NX//2-50))
 
 
 class Sim:
