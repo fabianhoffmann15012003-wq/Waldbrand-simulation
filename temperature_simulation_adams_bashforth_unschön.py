@@ -348,7 +348,7 @@ dim_size = 5
 nth_shown = 20
 s_T = "box"
 
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=6)
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=4)
 S_begin = simualtion.S_matrix
 frms = 500
 
