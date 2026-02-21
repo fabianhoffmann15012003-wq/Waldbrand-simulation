@@ -288,7 +288,7 @@ start = time.time()
 dim_faktor = 2
 dim_size = 5
 nth_shown = 20
-s_T = "box"
+s_T = "one Gauss"
 simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T)
 S_begin = simualtion.S_1_matrix
 frms = 500
