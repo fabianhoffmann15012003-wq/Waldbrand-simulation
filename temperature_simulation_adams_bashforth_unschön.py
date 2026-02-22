@@ -76,8 +76,8 @@ class Sim:
         #self.S_2_matrix -= self.randomizer
 
         #fuel break
-        self.S_2_matrix[0:NX, 120:140] = 10**(-9)
-        self.S_1_matrix[0:NX, 120:140] = 1-10**(-9)
+        self.S_2_matrix[0:NX, 120:130] = 10**(-9)
+        self.S_1_matrix[0:NX, 120:130] = 1-10**(-9)
 
         #fuel gradient
         #self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
