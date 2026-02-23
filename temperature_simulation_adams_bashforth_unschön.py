@@ -50,8 +50,9 @@ def gauss2d(x, y, mx, my, s):
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
-def box(x,y, NX):
-    return (y < (NX//2 +15)) and (y > (NX//2 - 15)) and (x < (NX//2+15)) and (x > (NX//2-15))
+def box(x,y, NX, size):
+    half_size = size // 2
+    return (y < (NX//2 +half_size)) and (y > (NX//2 - half_size)) and (x < (NX//2+half_size)) and (x > (NX//2-half_size))
 
 
 class Sim:
@@ -76,8 +77,8 @@ class Sim:
         #self.S_2_matrix -= self.randomizer
 
         #fuel break
-        self.S_2_matrix[0:NX, 120:130] = 10**(-9)
-        self.S_1_matrix[0:NX, 120:130] = 1-10**(-9)
+        #self.S_2_matrix[0:NX, 120:130] = 10**(-9)
+        #self.S_1_matrix[0:NX, 120:130] = 1-10**(-9)
 
         #fuel gradient
         #self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
@@ -143,8 +144,10 @@ class Sim:
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
         convection = C_4/self.c_0 * self.U*(self.T_matrix-T_A)
-        self.dT_dt_matrix_0 = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
-
+        if self.U_10_X == 0:
+            self.dT_dt_matrix = reaction - convection
+        else:
+            self.dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
         
         self.T_matrix = self.T_matrix + self.dt * self.dT_dt_matrix_0
 
@@ -172,7 +175,7 @@ class Sim:
         elif start=="box":
             for i in range(self.NX):
                 for j in range(self.NY):
-                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX)
+                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX, 50)
         else:
             raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
 
@@ -351,11 +354,11 @@ start = time.time()
 
 #choose conditions / size of the simulation
 dim_faktor = 2
-dim_size = 1
+dim_size = 2
 nth_shown = 20
-s_T = "one Gauss"
+s_T = "box"
 
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3.0)
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=30.0)
 S_begin = simualtion.S_matrix
 frms = 500
 
