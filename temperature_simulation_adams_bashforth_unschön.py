@@ -9,7 +9,7 @@ import time
 
 from warnings import catch_warnings
 
-# Constants ? from the Table 2 
+# Constants from the Table 2 
 FMC = 0.25 # NOT USED
 H = 2 
 T_A = 300.0 #interpreting as outside Temperature ~25°C
@@ -52,7 +52,9 @@ def gauss2d_spreaded(x, y, mx, my, s):
 
 def box(x,y, NX, size):
     half_size = size // 2
-    return (y < (NX//2 +half_size)) and (y > (NX//2 - half_size)) and (x < (NX//2+half_size)) and (x > (NX//2-half_size))
+    return (y < (NX//2 +half_size)) and (y > (NX//2 - half_size)) and (x < (NX//2+half_size)) and (x > (NX//2-half_size))   #square
+    #return (y < (NX//2 +half_size)) and (y > (NX//2)) and (x < (NX//2+half_size)) and (x > (NX//2-half_size))   #vertical rectangle
+
 
 
 class Sim:
