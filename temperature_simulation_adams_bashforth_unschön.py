@@ -106,7 +106,35 @@ class Sim:
         self.dx = 0.5 # length of a "pixel" from paper in m
         self.n = n    # number of steps per step to speed up the animation
 
+
+        if start=="one Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY, 100])//sig)*(T_MAX_I-T_A)
+        elif start=="spreaded Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d_spreaded(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+        elif start=="two Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//8, self.NX//2, np.min([self.NX, self.NY])//(sig*1.8))*(T_MAX_I-T_A)
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//8, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)*0.6
+        elif start=="wall":
+            self.T_matrix[:,self.NY//100:2*self.NY//50] = T_MAX_I
+        elif start=="Gradient":
+            for i in range(75):
+                self.T_matrix[:,i+1] += (T_MAX_I-T_A)*(1-(i+1)/75)*0.8
+        elif start=="box":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX, 50)
+        else:
+            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
+
+
         #one first step to get T_1
+        ###
         self.x_c = self.calc_x_c()
         self.avg_u_x = self.calc_avg_u_x()
         self.avg_u_y = 0
@@ -152,36 +180,8 @@ class Sim:
             self.dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
         
         self.T_matrix = self.T_matrix + self.dt * self.dT_dt_matrix_0
-
-
-
-
-        if start=="one Gauss":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY, 100])//sig)*(T_MAX_I-T_A)
-        elif start=="spreaded Gauss":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d_spreaded(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
-        elif start=="two Gauss":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//8, self.NX//2, np.min([self.NX, self.NY])//(sig*1.8))*(T_MAX_I-T_A)
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//8, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)*0.6
-        elif start=="wall":
-            self.T_matrix[:,self.NY//100:2*self.NY//50] = T_MAX_I
-        elif start=="Gradient":
-            for i in range(75):
-                self.T_matrix[:,i+1] += (T_MAX_I-T_A)*(1-(i+1)/75)*0.8
-        elif start=="box":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX, 50)
-        else:
-            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
-
-
+        
+        ###
 
 
 
@@ -356,11 +356,11 @@ start = time.time()
 
 #choose conditions / size of the simulation
 dim_faktor = 2
-dim_size = 2
+dim_size = 5
 nth_shown = 20
-s_T = "box"
+s_T = "one Gauss"
 
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=30.0)
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3.0)
 S_begin = simualtion.S_matrix
 frms = 500
 
