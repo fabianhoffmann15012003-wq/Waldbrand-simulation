@@ -9,7 +9,7 @@ import time
 
 from warnings import catch_warnings
 
-# Constants ? from the Table 2 
+# Constants from the Table 2 
 FMC = 0.25 # NOT USED
 H = 2 
 T_A = 300.0 #interpreting as outside Temperature ~25°C
@@ -50,8 +50,11 @@ def gauss2d(x, y, mx, my, s):
 def gauss2d_spreaded(x, y, mx, my, s):
     return (2*np.exp(1) / s**2)*((x-mx)**2. + (y-my)**2.) * np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.) + np.exp(-2*((x-mx)**2. + (y-my)**2.) / s**2.)
 
-def box(x,y):
-    return (y<170)and(y>150)and(x<530)and(x>470)
+def box(x,y, NX, size):
+    half_size = size // 2
+    return (y < (NX//2 +half_size)) and (y > (NX//2 - half_size)) and (x < (NX//2+half_size)) and (x > (NX//2-half_size))   #square
+    #return (y < (NX//2 +half_size)) and (y > (NX//2)) and (x < (NX//2+half_size)) and (x > (NX//2-half_size))   #vertical rectangle
+
 
 
 class Sim:
@@ -76,8 +79,8 @@ class Sim:
         #self.S_2_matrix -= self.randomizer
 
         #fuel break
-        #self.S_2_matrix[0:NX, 120:170] = 10**(-9)
-        #self.S_1_matrix[0:NX, 120:170] = 1-10**(-9)
+        #self.S_2_matrix[0:NX, 120:130] = 10**(-9)
+        #self.S_1_matrix[0:NX, 120:130] = 1-10**(-9)
 
         #fuel gradient
         #self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
@@ -103,7 +106,35 @@ class Sim:
         self.dx = 0.5 # length of a "pixel" from paper in m
         self.n = n    # number of steps per step to speed up the animation
 
+
+        if start=="one Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY, 100])//sig)*(T_MAX_I-T_A)
+        elif start=="spreaded Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d_spreaded(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
+        elif start=="two Gauss":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//8, self.NX//2, np.min([self.NX, self.NY])//(sig*1.8))*(T_MAX_I-T_A)
+                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//8, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)*0.6
+        elif start=="wall":
+            self.T_matrix[:,self.NY//100:2*self.NY//50] = T_MAX_I
+        elif start=="Gradient":
+            for i in range(75):
+                self.T_matrix[:,i+1] += (T_MAX_I-T_A)*(1-(i+1)/75)*0.8
+        elif start=="box":
+            for i in range(self.NX):
+                for j in range(self.NY):
+                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j, NX, 50)
+        else:
+            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
+
+
         #one first step to get T_1
+        ###
         self.x_c = self.calc_x_c()
         self.avg_u_x = self.calc_avg_u_x()
         self.avg_u_y = 0
@@ -143,40 +174,14 @@ class Sim:
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
         convection = C_4/self.c_0 * self.U*(self.T_matrix-T_A)
-        self.dT_dt_matrix_0 = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
-
+        if self.U_10_X == 0:
+            self.dT_dt_matrix = reaction - convection
+        else:
+            self.dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
         
         self.T_matrix = self.T_matrix + self.dt * self.dT_dt_matrix_0
-
-
-
-
-        if start=="one Gauss":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
-        elif start=="spreaded Gauss":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d_spreaded(i, j, self.NX//2, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)
-        elif start=="two Gauss":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2- self.NX//8, self.NX//2, np.min([self.NX, self.NY])//(sig*1.8))*(T_MAX_I-T_A)
-                    self.T_matrix[i,j] += gauss2d(i, j, self.NX//2+ self.NX//8, self.NX//2, np.min([self.NX, self.NY])//sig)*(T_MAX_I-T_A)*0.6
-        elif start=="wall":
-            self.T_matrix[:,self.NY//100:2*self.NY//50] = T_MAX_I
-        elif start=="Gradient":
-            for i in range(75):
-                self.T_matrix[:,i+1] += (T_MAX_I-T_A)*(1-(i+1)/75)*0.8
-        elif start=="box":
-            for i in range(self.NX):
-                for j in range(self.NY):
-                    self.T_matrix[i,j] += (T_MAX_I-T_A)*box(i,j)
-        else:
-            raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
-
-
+        
+        ###
 
 
 
@@ -217,7 +222,10 @@ class Sim:
     # calculates the varible u_avg_x that is dependent on the varible x_c
     # it describes the average speed over the forest and at this point is only in the x-Direction as the y-Paart =0
     def calc_avg_u_x(self):
-        return self.AVG_U_V_X+(self.AVG_U_B_X-self.AVG_U_V_X)*(1-self.x_c)
+        if abs(self.U_10_X) > 0:
+            return self.AVG_U_V_X+(self.AVG_U_B_X-self.AVG_U_V_X)*(1-self.x_c)
+        else:
+            return 0
 
     # calculates the vector L that is dependent on the matrix T
     # it describes the size of the fire in the two Dimensions
@@ -292,7 +300,11 @@ class Sim:
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
         convection = C_4/self.c_0 * self.U*(self.T_matrix-T_A)
-        dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
+        if self.U_10_X == 0:
+            dT_dt_matrix = reaction - convection
+        else:
+            dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
+
         T_matrix_new = T_matrix_new + self.dt * (3/2 * dT_dt_matrix - 1/2 * self.dT_dt_matrix_0)
         # making sure the Temperature doesnt drop to much
         T_matrix_new[T_matrix_new<T_A]=T_A
@@ -341,15 +353,18 @@ print(f"                                 {datetime.now().time()}\n")
 
 
 start = time.time()
-dim_faktor = 1
-dim_size = 10
-nth_shown = 20
-s_T = "box"
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3)
-S_begin = simualtion.S_matrix
-frms = 1250
 
-print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, numer of frames to calculate: {frms*nth_shown}")
+#choose conditions / size of the simulation
+dim_faktor = 2
+dim_size = 5
+nth_shown = 20
+s_T = "one Gauss"
+
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3.0)
+S_begin = simualtion.S_matrix
+frms = 500
+
+print(f"\n\tSize: ({dim_size*100} x {dim_faktor*dim_size*100}), Temperature shape: \"{s_T}\", Velocity: {simualtion.U_10_X}, number of frames to calculate: {frms*nth_shown}")
 fig, ax = plt.subplots(figsize=(8*dim_faktor,8))
 im = ax.imshow(simualtion.T_matrix, vmin=T_A, vmax = 2500)
 
@@ -365,7 +380,7 @@ plt.subplots_adjust(top = 1, bottom = 0, right = 1, left = 0,
             hspace = 0, wspace = 0)
 
 ani = animation.FuncAnimation(fig, update, frames=frms, interval=1) #frames - the number of steps in the simulation
-ani.save('Animations/NEW.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="pillow")
+ani.save('Results_for_report/NEW_T.gif', fps=50, savefig_kwargs={'pad_inches':0}, writer="pillow")
 
 end = time.time()
 duration = end-start
@@ -375,9 +390,11 @@ print(f"\tSimulation of Size {dim_size*100*simualtion.dx}m x {dim_faktor*dim_siz
 # Showing the difference in S
 S_end = simualtion.S_matrix
 S_diff = S_begin-S_end
-plt.imsave("S_development/NEW.png", S_diff)
+plt.imsave("Results_for_report/NEW_S.png", S_diff)
 print(f"\n\tthem maximum of the change in S ist {np.max(S_diff):.5f}\n")
 
 
 print(f"\n                                 {datetime.now().time()}")
 print("------------------------------ ! ! ! FERTIG ! ! ! ------------------------------\n")
+
+
