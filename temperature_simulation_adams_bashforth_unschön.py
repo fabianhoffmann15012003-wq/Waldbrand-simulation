@@ -107,6 +107,7 @@ class Sim:
         self.n = n    # number of steps per step to speed up the animation
 
 
+        #implementing different starting shapes
         if start=="one Gauss":
             for i in range(self.NX):
                 for j in range(self.NY):
@@ -170,6 +171,7 @@ class Sim:
         T_matrix_dy_plus = convolve2d(self.T_matrix_0, dy_kern_plus, mode='same', boundary='symm')
         T_matrix_dy_minus = convolve2d(self.T_matrix_0, dy_kern_minus, mode='same', boundary='symm')
 
+        #main DGL 
         dispersion = self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
@@ -296,6 +298,7 @@ class Sim:
         T_matrix_dy_plus = convolve2d(self.T_matrix, dy_kern_plus, mode='same', boundary='symm')
         T_matrix_dy_minus = convolve2d(self.T_matrix, dy_kern_minus, mode='same', boundary='symm')
 
+        #Main DGL
         dispersion = self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
