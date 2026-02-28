@@ -43,7 +43,7 @@ KAPPA = 0.41 # Karman's Konstant
 SIGMA_B = 5.67*10**(-8) # Stefan-Boltzmann Constant
 
 
-# Functions for different starting ditributions of the temperature
+# Functions for different starting distributions of the temperature
 def gauss2d(x, y, mx, my, s):
     return np.exp(-((x-mx)**2./(2.*s**2.)+(y-my)**2./(2.*s**2.)))
 
@@ -73,21 +73,14 @@ class Sim:
         self.S_1_matrix = np.ones((self.NX, self.NY))*0.2 # shape of the forest
         self.S_2_matrix = np.ones((self.NX, self.NY))*0.8 # shape of the forest
 
-        #random uniform fuel change 
-        #self.randomizer = np.random.rand(self.NX, self.NY) / 4.0
-        #self.S_1_matrix += self.randomizer
-        #self.S_2_matrix -= self.randomizer
 
         #fuel break
         #self.S_2_matrix[0:NX, 120:130] = 10**(-9)
         #self.S_1_matrix[0:NX, 120:130] = 1-10**(-9)
 
-        #fuel gradient
-        #self.S_2_matrix -= np.tile(np.linspace(0.0, 0.3, num = NX), (NY, 1)).transpose()
-
+        #initializing temperature, fuel content and water content matrices
         self.S_2_0_matrix = self.S_2_matrix
         self.S_matrix = self.calc_S()
-        # Temperature is spread by a gaussian in the middle
         self.T_matrix_0 = np.ones((self.NX,self.NY))*T_A 
         self.T_matrix = np.ones((self.NX,self.NY))*T_A 
         self.dT_dt_matrix_0 = np.ones((self.NX,self.NY))
@@ -95,7 +88,7 @@ class Sim:
         self.U = self.calc_U()
         # initial Speeds
         self.U_10_X = U_10_X # wind with speed 10 m/s in only the x-direction
-        self.U_10_Y = U_10_Y # wind with speed 10 m/s in only the x-direction
+        self.U_10_Y = U_10_Y # => U_10_Y = 0
         self.U_H_X = self.U_10_X*0.9
         self.U_B_STAR_X = self.U_10_X*KAPPA/np.log(10/Z_0)
         self.AVG_U_V_X = self.U_H_X/ETA * (1-np.exp(-ETA))
@@ -134,7 +127,7 @@ class Sim:
             raise ValueError(f"\n\tThe Starting Version \"{start}\" is not an option, try: \"one Gauss\", \"spreaded Gauss\", \"two Gauss\", \"wall\", \"Gradient\" or \"box\"\n")
 
 
-        #one first step to get T_1
+        #one first step to get T_1; commented out below in the update functions
         ###
         self.x_c = self.calc_x_c()
         self.avg_u_x = self.calc_avg_u_x()
@@ -151,27 +144,20 @@ class Sim:
         self.S_2_matrix[self.S_2_matrix<0]=0
         self.S_matrix = self.calc_S()
 
-        # spacial derivatives using central difference
-        # df/dx -> (f(x-1)-f(x+1))/2
         dx_kern_plus = [[1.0, -1.0, 0.0]]
         dx_kern_minus = [[0.0, 1.0, -1.0]]
-
         dy_kern_plus = [[1.0],[-1.0],[0.0]]
         dy_kern_minus = [[0.0],[1.0],[-1.0]]
-        # d^2f/dx^2 -> f(x-1)-2f(x)+f(x+1)
         dx2_kern = [[1,-2,1]]
         dy2_kern = [[1],[-2],[1]]
 
-        #convolve for normal central differences for second order derivatives
         T_matrix_dx2 = convolve2d(self.T_matrix_0, dx2_kern, mode='same', boundary='symm') / self.dx**2
         T_matrix_dy2 = convolve2d(self.T_matrix_0, dy2_kern, mode='same', boundary='symm') / self.dx**2
-        #upwinding from paper / wikipedia for first order derivatives:
         T_matrix_dx_plus = convolve2d(self.T_matrix_0, dx_kern_plus, mode='same', boundary='symm')
         T_matrix_dx_minus = convolve2d(self.T_matrix_0, dx_kern_minus, mode='same', boundary='symm')
         T_matrix_dy_plus = convolve2d(self.T_matrix_0, dy_kern_plus, mode='same', boundary='symm')
         T_matrix_dy_minus = convolve2d(self.T_matrix_0, dy_kern_minus, mode='same', boundary='symm')
 
-        #main DGL 
         dispersion = self.D_eff_x*T_matrix_dx2 + self.D_eff_y*T_matrix_dy2
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
@@ -224,7 +210,7 @@ class Sim:
     # calculates the varible u_avg_x that is dependent on the varible x_c
     # it describes the average speed over the forest and at this point is only in the x-Direction as the y-Paart =0
     def calc_avg_u_x(self):
-        if abs(self.U_10_X) > 0:
+        if abs(self.U_10_X) > 0:    #zero subtraction handled in case of no wind
             return self.AVG_U_V_X+(self.AVG_U_B_X-self.AVG_U_V_X)*(1-self.x_c)
         else:
             return 0
@@ -303,15 +289,20 @@ class Sim:
         advection = (np.maximum(self.avg_u_x, 0)*T_matrix_dx_minus + np.minimum(self.avg_u_x, 0)*T_matrix_dx_plus + np.maximum(self.avg_u_y, 0)*T_matrix_dy_minus + np.minimum(self.avg_u_y, 0)*T_matrix_dy_plus) / self.dx
         reaction = -C_2/self.c_0 * self.S_1_matrix*self.r_1 + C_3/self.c_0 * self.S_2_matrix*self.r_2t
         convection = C_4/self.c_0 * self.U*(self.T_matrix-T_A)
-        if self.U_10_X == 0:
+        if self.U_10_X == 0:    #zero subtraction handled in case of no wind
             dT_dt_matrix = reaction - convection
         else:
             dT_dt_matrix = self.c_1/self.c_0 * (dispersion - advection) + reaction - convection
-
+        
+        #2nd order Adams-Bashforth step; dT-dt_matrix_0 is the previous update function; dT_dt_matrix is the new one calculated just here
         T_matrix_new = T_matrix_new + self.dt * (3/2 * dT_dt_matrix - 1/2 * self.dT_dt_matrix_0)
+
         # making sure the Temperature doesnt drop to much
         T_matrix_new[T_matrix_new<T_A]=T_A
+                
+        #the "previous" update function is set to be the current one for the next step
         self.dT_dt_matrix_0 = dT_dt_matrix
+
         return T_matrix_new
             
     # calculates a step of the simulation
@@ -362,8 +353,9 @@ dim_faktor = 2
 dim_size = 5
 nth_shown = 20
 s_T = "one Gauss"
+wind_speed = 3.0
 
-simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=3.0)
+simualtion = Sim(NX=dim_size*100, NY=dim_faktor*dim_size*100, n=nth_shown, start=s_T, U_10_X=wind_speed)
 S_begin = simualtion.S_matrix
 frms = 500
 
